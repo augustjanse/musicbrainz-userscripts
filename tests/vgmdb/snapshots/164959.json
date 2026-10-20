@@ -1,0 +1,39 @@
+{
+    "title": "TACTOM / onoken",
+    "artist_credit": [],
+    "status": "official",
+    "year": 2026,
+    "month": 10,
+    "day": 20,
+    "labels": [
+        {
+            "name": "axsword",
+            "catno": "N/A"
+        }
+    ],
+    "urls": [
+        {
+            "url": "https://vgmdb.net/album/164959",
+            "link_type": 86
+        },
+        {
+            "url": "http://onoken.bandcamp.com/track/tactom",
+            "link_type": null
+        },
+        {
+            "url": "http://www.youtube.com/watch?v=xA1MwoZ_J6Q",
+            "link_type": null
+        }
+    ],
+    "discs": [
+        {
+            "format": "Digital Media",
+            "tracks": [
+                {
+                    "title": "TACTOM",
+                    "duration": "2:30"
+                }
+            ]
+        }
+    ]
+}
