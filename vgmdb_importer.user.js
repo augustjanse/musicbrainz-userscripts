@@ -2,16 +2,18 @@
 // @name         Import VGMdb releases into MusicBrainz
 // @namespace    https://github.com/murdos/musicbrainz-userscripts/
 // @description  One-click importing of releases from vgmdb.net into MusicBrainz.
-// @version      2026.10.20.2
+// @version      2026.10.20.3
 // @downloadURL  https://raw.githubusercontent.com/murdos/musicbrainz-userscripts/master/vgmdb_importer.user.js
 // @updateURL    https://raw.githubusercontent.com/murdos/musicbrainz-userscripts/master/vgmdb_importer.user.js
 // @match        https://vgmdb.net/album/*
 // @match        https://vgmdb.net/artist/*
 // @match        https://vgmdb.net/org/*
+// @connect      musicbrainz.org
 // @run-at       document-start
 // @require      https://code.jquery.com/jquery-3.5.1.min.js
 // @require      https://raw.githubusercontent.com/murdos/musicbrainz-userscripts/0d35cbc2fc679e20b7ff865c7945a3cc64f3615a/lib/mbimport.js
 // @require      lib/logger.js
+// @require      https://raw.githubusercontent.com/murdos/musicbrainz-userscripts/755843cf53404869f6817310153fc8bb6cf9cb9b/lib/mblinks.js
 // @require      lib/mbimportstyle.js
 // @icon         https://metabrainz.org/static/img/projects/musicbrainz.svg
 // @grant        none
@@ -712,3 +714,38 @@ function getTracklistLanguage(vgmdbTracks) {
 function getForeignLanguages(languages) {
     return languages.filter(language => language !== 'English' && language !== 'Romaji');
 }
+
+/*
+ * Links the current VGMdb album, artist or organisation page to the
+ * MusicBrainz releases, artists or labels that already have it as a URL
+ * relationship, so that existing releases are found before importing a
+ * duplicate. This only needs the page URL, not the album data.
+ */
+function insertMbLinks() {
+    const vgmdbUrl = getCanonicalVgmdbUrl(window.location.href);
+    const heading = document.querySelector('#innermain h1');
+    if (!vgmdbUrl || !heading) {
+        return;
+    }
+
+    const mbType = { album: 'release', artist: 'artist', org: 'label' }[vgmdbUrl.type];
+    const mbLinks = new MBLinks('VGMDB_MBLINKS_CACHE');
+    mbLinks.searchAndDisplayMbLink(
+        vgmdbUrl.url,
+        mbType,
+        link => heading.insertAdjacentHTML('afterbegin', link),
+        `${mbType}:${vgmdbUrl.url}`,
+    );
+}
+
+/*
+ * Returns the VGMdb page type and its URL in the form MusicBrainz stores it,
+ * https://vgmdb.net/<type>/<id> without query string, fragment or trailing
+ * slash, or null for pages that cannot be linked.
+ */
+function getCanonicalVgmdbUrl(url) {
+    const match = url.match(/^https?:\/\/(?:www\.)?vgmdb\.net\/(album|artist|org)\/(\d+)(?:[/?#]|$)/);
+    return match ? { type: match[1], url: `https://vgmdb.net/${match[1]}/${match[2]}` } : null;
+}
+
+$(document).ready(insertMbLinks);
