@@ -2,7 +2,7 @@
 // @name         Import VGMdb releases into MusicBrainz
 // @namespace    https://github.com/murdos/musicbrainz-userscripts/
 // @description  One-click importing of releases from vgmdb.net into MusicBrainz.
-// @version      2026.10.20.1
+// @version      2026.10.20.2
 // @downloadURL  https://raw.githubusercontent.com/murdos/musicbrainz-userscripts/master/vgmdb_importer.user.js
 // @updateURL    https://raw.githubusercontent.com/murdos/musicbrainz-userscripts/master/vgmdb_importer.user.js
 // @match        https://vgmdb.net/album/*
@@ -29,8 +29,15 @@ $(document).ready(function () {
     MBImportStyle();
     MBSearchItStyle();
 
-    const release = parseVgmdbPage(document, window.location.href);
-    insertButtons(release);
+    insertButtons(parseVgmdbPage(document, window.location.href, getSelectedTracklistLanguage(document)));
+
+    // Rebuild the import form whenever another tracklist tab is selected. The
+    // page’s own tab handler stops the click from bubbling, so listen on each tab.
+    for (const anchor of document.querySelectorAll('#tlnav a[rel]')) {
+        anchor.addEventListener('click', () => {
+            insertButtons(parseVgmdbPage(document, window.location.href, getText(anchor).trim()));
+        });
+    }
 });
 
 /*
@@ -42,17 +49,29 @@ function isAlbumUrl(url) {
 }
 
 /*
- * Returns a MusicBrainz release object parsed from a VGMdb album page.
+ * Returns a MusicBrainz release object parsed from a VGMdb album page, with
+ * the track titles of the given tracklist language (the name of a language
+ * tab, e.g. “Romaji”). Without a language, or if no tracklist uses it, the
+ * language is chosen by getTracklistLanguage.
  */
-function parseVgmdbPage(doc, url) {
-    return mapRelease(parseVgmdbAlbum(doc, url));
+function parseVgmdbPage(doc, url, language) {
+    return mapRelease(parseVgmdbAlbum(doc, url), language);
+}
+
+/*
+ * Returns the name of the tracklist language tab currently selected on the
+ * page (e.g. “Japanese”), or undefined if none is marked as active.
+ */
+function getSelectedTracklistLanguage(doc) {
+    const anchor = doc.querySelector('#tlnav li.active > a[rel]');
+    return anchor ? getText(anchor).trim() : undefined;
 }
 
 /*
  * Returns a MusicBrainz release object based on the album data extracted by
- * parseVgmdbAlbum.
+ * parseVgmdbAlbum, with the track titles of the given tracklist language.
  */
-function mapRelease(vgmdbAlbum) {
+function mapRelease(vgmdbAlbum, language) {
     const releaseDate = mapDate(vgmdbAlbum.release_date);
 
     const release = {
@@ -65,7 +84,7 @@ function mapRelease(vgmdbAlbum) {
         labels: [{ name: mapLabel(vgmdbAlbum.organizations), catno: vgmdbAlbum.catalog }],
         barcode: vgmdbAlbum.barcode,
         urls: mapUrls(vgmdbAlbum.vgmdb_link, vgmdbAlbum.stores, vgmdbAlbum.websites),
-        discs: mapDiscs(vgmdbAlbum.discs, vgmdbAlbum.media_format),
+        discs: mapDiscs(vgmdbAlbum.discs, vgmdbAlbum.media_format, language),
     };
 
     return release;
@@ -401,6 +420,10 @@ function getFirstText(node) {
     return '';
 }
 
+/*
+ * Shows the MusicBrainz import form and search button for the release at the
+ * top of the right column, replacing those shown before, if any.
+ */
 function insertButtons(release) {
     const editNote = MBImport.makeEditNote(window.location.href, 'VGMdb');
     console.log(editNote);
@@ -409,6 +432,7 @@ function insertButtons(release) {
     const linkHtml = $(MBImport.buildSearchButton(release)).attr('style', 'margin: 5px 0 0 5px; display: inline-block').prop('outerHTML');
 
     const vgmdbHtml =
+        '<div id="mb-import-box">' +
         '<div style="width: 250px; background-color: #1B273D">' +
         '<b class="rtop"><b></b></b>' +
         '<div style="padding: 6px 10px 0px 10px">' +
@@ -418,8 +442,10 @@ function insertButtons(release) {
         `<div style="width: 250px; background-color: #2F364F;">${formHtml}${linkHtml}` +
         '<b class="rbot"><b></b></b> ' +
         '</div>' +
-        '<br style="clear: left" />';
+        '<br style="clear: left" />' +
+        '</div>';
 
+    $('#mb-import-box').remove();
     $('#rightcolumn').prepend(vgmdbHtml);
 }
 
@@ -546,9 +572,9 @@ function mapLinkTypes(storeName) {
 
 /*
  * Returns a list of disc objects each featuring title, format and tracklist
- * based on VGMdb disc data and media format.
+ * based on VGMdb disc data, media format and tracklist language.
  */
-function mapDiscs(vgmdbDiscs, mediaFormat = '') {
+function mapDiscs(vgmdbDiscs, mediaFormat = '', language) {
     const discs = [];
 
     let multipleMedia;
@@ -569,7 +595,7 @@ function mapDiscs(vgmdbDiscs, mediaFormat = '') {
             disc['format'] = mapFormat(generalMediaFormat);
         }
 
-        disc['tracks'] = mapTracks(vgmdbDisc['tracks']);
+        disc['tracks'] = mapTracks(vgmdbDisc['tracks'], language);
 
         discs.push(disc);
     }
@@ -609,12 +635,13 @@ function mapFormat(mediaFormat) {
 }
 
 /*
- * Returns a MusicBrainz tracklist based on a VGMdb tracklist.
+ * Returns a MusicBrainz tracklist based on a VGMdb tracklist, with the titles
+ * in the given language if the tracklist has it.
  */
-function mapTracks(vgmdbTracks) {
+function mapTracks(vgmdbTracks, preferredLanguage) {
     const tracks = [];
 
-    const language = getTracklistLanguage(vgmdbTracks);
+    const language = Object.hasOwn(vgmdbTracks[0]['names'], preferredLanguage) ? preferredLanguage : getTracklistLanguage(vgmdbTracks);
     for (const vgmdbTrack of vgmdbTracks) {
         tracks.push({ title: vgmdbTrack['names'][language], duration: vgmdbTrack['track_length'] });
     }
