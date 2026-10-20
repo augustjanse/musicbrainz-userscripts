@@ -6,7 +6,7 @@ Snapshot tests for `parseVgmdbPage` in `vgmdb_importer.user.js`. Each test check
 
 ```
 tests/vgmdb/
-  config.ts            albums to test (URL + description)
+  config.ts            albums to test (URL, description, extra tracklist tabs)
   vgmdb.test.ts        Vitest test file
   load-parser.ts       loads parseVgmdbPage in Node and parses fixtures with jsdom
   update-snapshots.ts  regenerates the snapshots
@@ -19,6 +19,8 @@ tests/vgmdb/
 A **fixture** is the HTML of a VGMdb album page as served to a logged-out visitor (e.g. `fixtures/47239.html` for https://vgmdb.net/album/47239). Fixtures are committed to the repo so tests do not need network access. They are kept exactly as served, so `oxfmt.config.ts` excludes them from formatting.
 
 A **snapshot** is the JSON produced by running `parseVgmdbPage` on that fixture (e.g. `snapshots/47239.json`). It is the expected MusicBrainz import data: title, date, status, labels, barcode, URLs, discs, tracks, durations, and so on. Values that are `undefined` are left out.
+
+Like the userscript, the parser imports the track titles of the tracklist tab selected on the page (the one VGMdb marks as active). To also check other tabs, list their names in the album’s `languages` in `config.ts`; each gets its own snapshot, e.g. `snapshots/47239.Japanese.json`.
 
 Snapshot files are formatted by oxfmt. Regeneration is a separate command from the tests because the tests compare parsed JSON rather than serialized text.
 

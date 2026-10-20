@@ -7,9 +7,13 @@ import { JSDOM } from 'jsdom';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-type ParseVgmdbPage = (doc: unknown, url: string) => Record<string, unknown>;
+type ParseVgmdbPage = (doc: unknown, url: string, language?: string) => Record<string, unknown>;
 
-type ParseVgmdbHtml = (html: string, url: string) => Record<string, unknown>;
+type GetSelectedTracklistLanguage = (doc: unknown) => string | undefined;
+
+type Parser = { parseVgmdbPage: ParseVgmdbPage; getSelectedTracklistLanguage: GetSelectedTracklistLanguage };
+
+type ParseVgmdbHtml = (html: string, url: string, language?: string) => Record<string, unknown>;
 
 function createJQuery() {
     const jQuery = () => ({
@@ -21,8 +25,8 @@ function createJQuery() {
     return jQuery;
 }
 
-function loadParseVgmdbPage(): ParseVgmdbPage {
-    const sandbox: vm.Context & { parseVgmdbPage?: ParseVgmdbPage } = {
+function loadParser(): Parser {
+    const sandbox: vm.Context & Partial<Parser> = {
         console,
         jQuery: createJQuery(),
         document: {},
@@ -36,26 +40,29 @@ function loadParseVgmdbPage(): ParseVgmdbPage {
     // Runs this repository’s own userscript, never external input
     vm.runInContext(script, sandbox); // NOSONAR
 
-    const parseVgmdbPage = sandbox.parseVgmdbPage;
-    if (typeof parseVgmdbPage !== 'function') {
-        throw new Error('parseVgmdbPage was not loaded');
+    const { parseVgmdbPage, getSelectedTracklistLanguage } = sandbox;
+    if (typeof parseVgmdbPage !== 'function' || typeof getSelectedTracklistLanguage !== 'function') {
+        throw new Error('parseVgmdbPage or getSelectedTracklistLanguage was not loaded');
     }
-    return parseVgmdbPage;
+    return { parseVgmdbPage, getSelectedTracklistLanguage };
 }
 
 /*
  * Returns a function that parses the HTML of a VGMdb album page with the
- * userscript’s parser. Scripts in the page are never run.
+ * userscript’s parser, importing the given tracklist language or, like the
+ * userscript, the tab selected on the page. Scripts in the page are never run.
  */
 export function loadParseVgmdbHtml(): ParseVgmdbHtml {
-    const parseVgmdbPage = loadParseVgmdbPage();
+    const { parseVgmdbPage, getSelectedTracklistLanguage } = loadParser();
 
-    return function parseVgmdbHtml(html, url) {
+    return function parseVgmdbHtml(html, url, language) {
         // jsdom neither runs the page’s scripts nor loads its resources by default
         const dom = new JSDOM(html, { url });
         try {
             // Round-trip through JSON to drop undefined values, as in the stored snapshots
-            return JSON.parse(JSON.stringify(parseVgmdbPage(dom.window.document, url))) as Record<string, unknown>;
+            const doc = dom.window.document;
+            const release = parseVgmdbPage(doc, url, language ?? getSelectedTracklistLanguage(doc));
+            return JSON.parse(JSON.stringify(release)) as Record<string, unknown>;
         } finally {
             dom.window.close();
         }

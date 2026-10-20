@@ -13,10 +13,16 @@ const parseVgmdbHtml = loadParseVgmdbHtml();
 
 fs.mkdirSync(SNAPSHOTS_DIR, { recursive: true });
 
-for (const { url } of ALBUMS) {
+function writeSnapshot(name: string, result: Record<string, unknown>) {
+    fs.writeFileSync(path.join(SNAPSHOTS_DIR, `${name}.json`), `${JSON.stringify(result, null, 4)}\n`);
+}
+
+for (const { url, languages = [] } of ALBUMS) {
     const id = path.basename(new URL(url).pathname);
     const fixture = fs.readFileSync(path.join(FIXTURES_DIR, `${id}.html`), 'utf8');
-    const result = parseVgmdbHtml(fixture, url);
 
-    fs.writeFileSync(path.join(SNAPSHOTS_DIR, `${id}.json`), `${JSON.stringify(result, null, 4)}\n`);
+    writeSnapshot(id, parseVgmdbHtml(fixture, url));
+    for (const language of languages) {
+        writeSnapshot(`${id}.${language}`, parseVgmdbHtml(fixture, url, language));
+    }
 }
