@@ -1,0 +1,55 @@
+{
+    "title": "The Legend of Zelda: Twilight Princess Official Soundtrack",
+    "artist_credit": [],
+    "status": "promotion",
+    "year": 2006,
+    "month": 11,
+    "day": 19,
+    "labels": [
+        {
+            "name": "Nintendo of America",
+            "catno": "N/A"
+        }
+    ],
+    "urls": [
+        {
+            "url": "https://vgmdb.net/album/4333",
+            "link_type": 86
+        }
+    ],
+    "discs": [
+        {
+            "format": "CD",
+            "tracks": [
+                {
+                    "title": "The Legend of Zelda: Orchestra Piece #2",
+                    "duration": "2:03"
+                },
+                {
+                    "title": "Hyrule Field Main Theme",
+                    "duration": "2:34"
+                },
+                {
+                    "title": "Ordon Village",
+                    "duration": "3:14"
+                },
+                {
+                    "title": "Kakariko Village",
+                    "duration": "3:06"
+                },
+                {
+                    "title": "Death Mountain",
+                    "duration": "2:11"
+                },
+                {
+                    "title": "Midna's Theme",
+                    "duration": "1:32"
+                },
+                {
+                    "title": "Ilia's Theme",
+                    "duration": "1:50"
+                }
+            ]
+        }
+    ]
+}
