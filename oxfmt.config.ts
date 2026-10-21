@@ -12,7 +12,8 @@ export default defineConfig({
     endOfLine: 'lf',
     insertFinalNewline: true,
     proseWrap: 'preserve',
-    ignorePatterns: ['pnpm-lock.yaml'],
+    // Saved VGMdb pages are kept byte for byte as served
+    ignorePatterns: ['pnpm-lock.yaml', 'tests/vgmdb/fixtures/**'],
     sortImports: true,
     overrides: [
         {
