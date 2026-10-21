@@ -33,7 +33,8 @@ function loadParseVgmdbPage(): ParseVgmdbPage {
     let script = fs.readFileSync(path.join(ROOT, 'vgmdb_importer.user.js'), 'utf8');
     script = script.replace(/^\/\/ ==UserScript==[\s\S]*?\/\/ ==\/UserScript==\r?\n/, '');
 
-    vm.runInContext(script, sandbox);
+    // Runs this repository’s own userscript, never external input
+    vm.runInContext(script, sandbox); // NOSONAR
 
     const parseVgmdbPage = sandbox.parseVgmdbPage;
     if (typeof parseVgmdbPage !== 'function') {
